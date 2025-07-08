@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<Metrics SiteId="site_id" Sitename="site_name" DeviceId="device_id" Devicename="device_name" DivisionId="opt_division_id">
+    <Properties>
+        <MacAddress>00:b0:9d:be:30:13</MacAddress>
+        <IpAddress>10.254.254.79</IpAddress>
+        <HostName>hostname</HostName>
+        <HttpPort>80</HttpPort>
+        <HttpsPort>443</HttpsPort>
+        <Timezone>1</Timezone>
+        <DST>1</DST>
+        <HwPlatform>2300</HwPlatform>
+        <SerialNumber>10000000</SerialNumber>
+        <DeviceType>0</DeviceType>
+    </Properties>
+    <ReportData Interval="1">
+        <Report Date="2025-06-15">
+            <Object Id="0" DeviceId="device_id" Devicename="device_name" ObjectType="0" Name="1" ExternalId="1">
+                <Count StartTime="17:49:00" EndTime="17:50:00" Enters="0" Exits="0" Status="4"/>
+            </Object>
+        </Report>
+    </ReportData>
+</Metrics>
