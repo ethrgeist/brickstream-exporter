@@ -8,6 +8,7 @@ import (
 type Device struct {
 	ID string `gorm:"primaryKey"`
 
+	Name         string
 	MacAddress   string
 	IPAddress    string
 	HostName     string
@@ -21,6 +22,9 @@ type Device struct {
 	DeviceType   int
 	SwRelease    string
 	LastTransmit time.Time
+
+	SiteID string
+	Site   *Site
 
 	gorm.Model
 }

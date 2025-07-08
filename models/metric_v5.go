@@ -18,21 +18,22 @@ type MetricsV5 struct {
 }
 
 type Properties struct {
-	Version        int    `xml:"Version"`
-	TransmitTime   int64  `xml:"TransmitTime"`
-	MacAddress     string `xml:"MacAddress"`
-	IPAddress      string `xml:"IpAddress"`
-	HostName       string `xml:"HostName"`
-	HTTPPort       int    `xml:"HttpPort"`
-	HTTPSPort      int    `xml:"HttpsPort"`
-	Timezone       int    `xml:"Timezone"`
-	TimezoneName   string `xml:"TimezoneName"`
-	DST            int    `xml:"DST"`
-	TimezoneParsed *time.Location
-	HwPlatform     string `xml:"HwPlatform"`
-	SerialNumber   string `xml:"SerialNumber"`
-	DeviceType     int    `xml:"DeviceType"`
-	SwRelease      string `xml:"SwRelease"`
+	Version         int   `xml:"Version"`
+	TransmitTime    int64 `xml:"TransmitTime"`
+	TransmitTimeUTC time.Time
+	MacAddress      string `xml:"MacAddress"`
+	IPAddress       string `xml:"IpAddress"`
+	HostName        string `xml:"HostName"`
+	HTTPPort        int    `xml:"HttpPort"`
+	HTTPSPort       int    `xml:"HttpsPort"`
+	Timezone        int    `xml:"Timezone"`
+	TimezoneName    string `xml:"TimezoneName"`
+	DST             int    `xml:"DST"`
+	TimezoneParsed  *time.Location
+	HwPlatform      string `xml:"HwPlatform"`
+	SerialNumber    string `xml:"SerialNumber"`
+	DeviceType      int    `xml:"DeviceType"`
+	SwRelease       string `xml:"SwRelease"`
 }
 
 type ReportData struct {
@@ -84,6 +85,9 @@ func (p *Properties) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error 
 	}
 
 	p.TimezoneParsed = time.FixedZone(fmt.Sprintf("UTC%+d", p.Timezone+p.DST), (p.Timezone+p.DST)*3600)
+
+	p.TransmitTimeUTC = time.Unix(p.TransmitTime, 0).In(p.TimezoneParsed)
+
 	return nil
 }
 

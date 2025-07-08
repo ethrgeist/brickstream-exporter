@@ -7,8 +7,6 @@ type Site struct {
 
 	SiteID     string
 	SiteName   string
-	DeviceID   string
-	DeviceName string
 	DivisionID string
 
 	gorm.Model

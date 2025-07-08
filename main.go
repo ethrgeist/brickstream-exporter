@@ -26,9 +26,13 @@ func main() {
 	})
 
 	siteRepository := repository.NewSiteRepository(db, log)
-	brickstreamService := service.NewBrickstreamService(siteRepository, log)
+	deviceRepository := repository.NewDeviceRepository(db, log)
+	counterRepository := repository.NewCounterRepository(db, log)
+	brickstreamService := service.NewBrickstreamService(siteRepository, deviceRepository, counterRepository, log)
+	metricsService := service.NewMetricsService(siteRepository, deviceRepository, counterRepository, log)
 
 	controller.NewBrickstreamController(router, brickstreamService, log)
+	controller.NewMetricsController(router, metricsService, log)
 
 	router.POST("/ingest/metrics", func(c *gin.Context) {
 		var m models.MetricsV5

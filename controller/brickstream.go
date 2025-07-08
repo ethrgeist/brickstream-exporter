@@ -5,7 +5,6 @@ import (
 	"github.com/ethrgeist/brickstream-exporter/service"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"net/http"
 )
 
@@ -23,7 +22,7 @@ func NewBrickstreamController(engine *gin.Engine, brickstreamService service.Bri
 		log:                log,
 	}
 
-	engine.POST("/api/v1/brickstream/ingest/xml", controller.ParseMetricsXML)
+	engine.POST("/api/v1/brickstream/ingest/xml/v5", controller.ParseMetricsXML)
 
 	log.Debug().Msg("Brickstream Controller initialized")
 
@@ -37,7 +36,7 @@ func (bc *brickstreamController) ParseMetricsXML(c *gin.Context) {
 		return
 	}
 
-	log.Info().Str("Device", m.DeviceID).Msg("Received metrics")
+	bc.log.Info().Str("Device", m.DeviceID).Msg("Received metrics")
 	m.Process()
 	bc.log.Info().
 		Str("Timezone", m.Properties.TimezoneParsed.String()).

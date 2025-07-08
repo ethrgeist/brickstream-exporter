@@ -59,6 +59,8 @@ func DbConn() error {
 	}
 	err = db.AutoMigrate(
 		models.Site{},
+		models.Device{},
+		models.Counter{},
 	)
 	if err != nil {
 		return err
