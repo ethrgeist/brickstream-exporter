@@ -28,8 +28,9 @@ func main() {
 	siteRepository := repository.NewSiteRepository(db, log)
 	deviceRepository := repository.NewDeviceRepository(db, log)
 	counterRepository := repository.NewCounterRepository(db, log)
-	brickstreamService := service.NewBrickstreamService(siteRepository, deviceRepository, counterRepository, log)
-	metricsService := service.NewMetricsService(siteRepository, deviceRepository, counterRepository, log)
+	totalCountRepository := repository.NewTotalCountRepository(db, log)
+	brickstreamService := service.NewBrickstreamService(siteRepository, deviceRepository, counterRepository, totalCountRepository, log)
+	metricsService := service.NewMetricsService(siteRepository, deviceRepository, counterRepository, totalCountRepository, log)
 
 	controller.NewBrickstreamController(router, brickstreamService, log)
 	controller.NewMetricsController(router, metricsService, log)

@@ -61,6 +61,7 @@ func DbConn() error {
 		models.Site{},
 		models.Device{},
 		models.Counter{},
+		models.TotalCount{},
 	)
 	if err != nil {
 		return err

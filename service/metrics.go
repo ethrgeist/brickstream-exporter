@@ -15,6 +15,7 @@ type metricsService struct {
 	sr repository.SiteRepository
 	dr repository.DeviceRepository
 	cr repository.CounterRepository
+	tr repository.TotalCountRepository
 
 	sites         *prometheus.GaugeVec
 	devices       *prometheus.GaugeVec
@@ -25,7 +26,13 @@ type metricsService struct {
 	log zerolog.Logger
 }
 
-func NewMetricsService(sr repository.SiteRepository, dr repository.DeviceRepository, cr repository.CounterRepository, log zerolog.Logger) MetricsService {
+func NewMetricsService(
+	sr repository.SiteRepository,
+	dr repository.DeviceRepository,
+	cr repository.CounterRepository,
+	tr repository.TotalCountRepository,
+	log zerolog.Logger,
+) MetricsService {
 	sites := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "brickstream_site",
@@ -60,7 +67,7 @@ func NewMetricsService(sr repository.SiteRepository, dr repository.DeviceReposit
 	counterEnter := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "brickstream_counter_enters",
-			Help: "Enters during the last period",
+			Help: "Total amount of enters",
 		},
 		[]string{
 			"site_id",
@@ -73,7 +80,7 @@ func NewMetricsService(sr repository.SiteRepository, dr repository.DeviceReposit
 	counterExit := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "brickstream_counter_exits",
-			Help: "Exists during the last period",
+			Help: "Total amount of exits",
 		},
 		[]string{
 			"site_id",
@@ -103,14 +110,16 @@ func NewMetricsService(sr repository.SiteRepository, dr repository.DeviceReposit
 	prometheus.MustRegister(counterStatus)
 
 	return &metricsService{
-		sr:           sr,
-		dr:           dr,
-		cr:           cr,
-		sites:        sites,
-		devices:      devices,
-		counterEnter: counterEnter,
-		counterExit:  counterExit,
-		log:          log,
+		sr:            sr,
+		dr:            dr,
+		cr:            cr,
+		tr:            tr,
+		sites:         sites,
+		devices:       devices,
+		counterEnter:  counterEnter,
+		counterExit:   counterExit,
+		counterStatus: counterStatus,
+		log:           log,
 	}
 }
 
@@ -161,19 +170,25 @@ func (s *metricsService) UpdateSiteMetrics() {
 			continue
 		}
 
+		totals, err := s.tr.GetByDeviceID(device.ID)
+		if err != nil {
+			s.log.Error().Err(err).Str("device_id", device.ID).Msg("Failed to fetch totals for device")
+			continue
+		}
+
 		s.counterExit.WithLabelValues(
 			counter.Site.SiteID,
 			counter.Site.SiteName,
 			counter.Device.HostName,
 			counter.Device.Name,
-		).Set(float64(counter.Exits))
+		).Set(float64(totals.Exits))
 
 		s.counterEnter.WithLabelValues(
 			counter.Site.SiteID,
 			counter.Site.SiteName,
 			counter.Device.HostName,
 			counter.Device.Name,
-		).Set(float64(counter.Enters))
+		).Set(float64(totals.Enters))
 
 		s.counterStatus.WithLabelValues(
 			counter.Site.SiteID,

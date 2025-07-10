@@ -11,23 +11,31 @@ type BrickstreamService interface {
 }
 
 type brickstreamService struct {
-	sr     repository.SiteRepository
-	dr     repository.DeviceRepository
-	cr     repository.CounterRepository
-	logger zerolog.Logger
+	sr  repository.SiteRepository
+	dr  repository.DeviceRepository
+	cr  repository.CounterRepository
+	tr  repository.TotalCountRepository
+	log zerolog.Logger
 }
 
-func NewBrickstreamService(sr repository.SiteRepository, dr repository.DeviceRepository, cr repository.CounterRepository, logger zerolog.Logger) BrickstreamService {
+func NewBrickstreamService(
+	sr repository.SiteRepository,
+	dr repository.DeviceRepository,
+	cr repository.CounterRepository,
+	tr repository.TotalCountRepository,
+	logger zerolog.Logger,
+) BrickstreamService {
 	return &brickstreamService{
-		sr:     sr,
-		dr:     dr,
-		cr:     cr,
-		logger: logger,
+		sr:  sr,
+		dr:  dr,
+		cr:  cr,
+		tr:  tr,
+		log: logger,
 	}
 }
 
 func (b brickstreamService) SaveMetrics(m *models.MetricsV5) error {
-	b.logger.Info().Msg("Saving metrics")
+	b.log.Info().Msg("Saving metrics")
 	site := &models.Site{
 		SiteID:     m.SiteID,
 		SiteName:   m.SiteName,
@@ -35,10 +43,10 @@ func (b brickstreamService) SaveMetrics(m *models.MetricsV5) error {
 	}
 	err := b.sr.Upsert(site)
 	if err != nil {
-		b.logger.Error().Err(err).Msg("Failed to get site by SiteID")
+		b.log.Error().Err(err).Msg("Failed to get site by SiteID")
 		return err
 	}
-	b.logger.Info().Str("ID", site.ID).Msg("Site upserted successfully")
+	b.log.Info().Str("ID", site.ID).Msg("Site upserted successfully")
 
 	device := &models.Device{
 		Name:         m.DeviceName,
@@ -61,11 +69,11 @@ func (b brickstreamService) SaveMetrics(m *models.MetricsV5) error {
 
 	err = b.dr.Upsert(device)
 	if err != nil {
-		b.logger.Error().Err(err).Msg("Failed to upsert device")
+		b.log.Error().Err(err).Msg("Failed to upsert device")
 		return err
 	}
 
-	b.logger.Info().Str("ID", site.ID).Msg("Device upserted successfully")
+	b.log.Info().Str("ID", site.ID).Msg("Device upserted successfully")
 
 	// only take the first report and object for simplicity, must be expanded for multiple reports/objects
 	counter := &models.Counter{
@@ -82,7 +90,18 @@ func (b brickstreamService) SaveMetrics(m *models.MetricsV5) error {
 
 	err = b.cr.Create(counter)
 	if err != nil {
-		b.logger.Error().Err(err).Msg("Failed to save counter")
+		b.log.Error().Err(err).Msg("Failed to save counter")
+		return err
+	}
+
+	totalCount := &models.TotalCount{
+		DeviceID: device.ID,
+		Enters:   m.ReportData.Reports[0].Objects[0].Counts[0].Enters,
+		Exits:    m.ReportData.Reports[0].Objects[0].Counts[0].Exits,
+	}
+	err = b.tr.Upsert(totalCount)
+	if err != nil {
+		b.log.Error().Err(err).Msg("Failed to save total count")
 		return err
 	}
 
