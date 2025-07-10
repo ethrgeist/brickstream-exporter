@@ -16,10 +16,11 @@ type metricsService struct {
 	dr repository.DeviceRepository
 	cr repository.CounterRepository
 
-	sites        *prometheus.GaugeVec
-	devices      *prometheus.GaugeVec
-	counterEnter *prometheus.GaugeVec
-	counterExit  *prometheus.GaugeVec
+	sites         *prometheus.GaugeVec
+	devices       *prometheus.GaugeVec
+	counterEnter  *prometheus.GaugeVec
+	counterExit   *prometheus.GaugeVec
+	counterStatus *prometheus.GaugeVec
 
 	log zerolog.Logger
 }
@@ -65,7 +66,6 @@ func NewMetricsService(sr repository.SiteRepository, dr repository.DeviceReposit
 			"site_id",
 			"site_name",
 			"device_hostname",
-			"status",
 			"device_name",
 		},
 	)
@@ -79,7 +79,19 @@ func NewMetricsService(sr repository.SiteRepository, dr repository.DeviceReposit
 			"site_id",
 			"site_name",
 			"device_hostname",
-			"status",
+			"device_name",
+		},
+	)
+
+	counterStatus := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "brickstream_counter_status",
+			Help: "Status of the counter, 0 is okay, everything else is an error",
+		},
+		[]string{
+			"site_id",
+			"site_name",
+			"device_hostname",
 			"device_name",
 		},
 	)
@@ -88,6 +100,7 @@ func NewMetricsService(sr repository.SiteRepository, dr repository.DeviceReposit
 	prometheus.MustRegister(devices)
 	prometheus.MustRegister(counterEnter)
 	prometheus.MustRegister(counterExit)
+	prometheus.MustRegister(counterStatus)
 
 	return &metricsService{
 		sr:           sr,
@@ -152,7 +165,6 @@ func (s *metricsService) UpdateSiteMetrics() {
 			counter.Site.SiteID,
 			counter.Site.SiteName,
 			counter.Device.HostName,
-			strconv.Itoa(counter.Status),
 			counter.Device.Name,
 		).Set(float64(counter.Exits))
 
@@ -160,9 +172,15 @@ func (s *metricsService) UpdateSiteMetrics() {
 			counter.Site.SiteID,
 			counter.Site.SiteName,
 			counter.Device.HostName,
-			strconv.Itoa(counter.Status),
 			counter.Device.Name,
 		).Set(float64(counter.Enters))
+
+		s.counterStatus.WithLabelValues(
+			counter.Site.SiteID,
+			counter.Site.SiteName,
+			counter.Device.HostName,
+			counter.Device.Name,
+		).Set(float64(counter.Status))
 
 	}
 }
