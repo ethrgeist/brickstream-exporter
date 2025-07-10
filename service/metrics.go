@@ -20,7 +20,9 @@ type metricsService struct {
 	sites         *prometheus.GaugeVec
 	devices       *prometheus.GaugeVec
 	counterEnter  *prometheus.GaugeVec
+	LastEnter     *prometheus.GaugeVec
 	counterExit   *prometheus.GaugeVec
+	LastExit      *prometheus.GaugeVec
 	counterStatus *prometheus.GaugeVec
 
 	log zerolog.Logger
@@ -77,10 +79,36 @@ func NewMetricsService(
 		},
 	)
 
+	lastEnter := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "brickstream_counter_last_enters",
+			Help: "Last data report for enters",
+		},
+		[]string{
+			"site_id",
+			"site_name",
+			"device_hostname",
+			"device_name",
+		},
+	)
+
 	counterExit := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "brickstream_counter_exits",
 			Help: "Total amount of exits",
+		},
+		[]string{
+			"site_id",
+			"site_name",
+			"device_hostname",
+			"device_name",
+		},
+	)
+
+	lastExit := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "brickstream_counter_last_exits",
+			Help: "Last data report for exits",
 		},
 		[]string{
 			"site_id",
@@ -108,6 +136,8 @@ func NewMetricsService(
 	prometheus.MustRegister(counterEnter)
 	prometheus.MustRegister(counterExit)
 	prometheus.MustRegister(counterStatus)
+	prometheus.MustRegister(lastEnter)
+	prometheus.MustRegister(lastExit)
 
 	return &metricsService{
 		sr:            sr,
@@ -119,6 +149,8 @@ func NewMetricsService(
 		counterEnter:  counterEnter,
 		counterExit:   counterExit,
 		counterStatus: counterStatus,
+		LastEnter:     lastEnter,
+		LastExit:      lastExit,
 		log:           log,
 	}
 }
@@ -175,6 +207,20 @@ func (s *metricsService) UpdateSiteMetrics() {
 			s.log.Error().Err(err).Str("device_id", device.ID).Msg("Failed to fetch totals for device")
 			continue
 		}
+
+		s.LastEnter.WithLabelValues(
+			counter.Site.SiteID,
+			counter.Site.SiteName,
+			counter.Device.HostName,
+			counter.Device.Name,
+		).Set(float64(counter.Enters))
+
+		s.LastExit.WithLabelValues(
+			counter.Site.SiteID,
+			counter.Site.SiteName,
+			counter.Device.HostName,
+			counter.Device.Name,
+		).Set(float64(counter.Exits))
 
 		s.counterExit.WithLabelValues(
 			counter.Site.SiteID,
